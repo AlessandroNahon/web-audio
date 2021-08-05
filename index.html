@@ -11,6 +11,8 @@
         padding: 2em;
         margin: 0;
         font-family: sans-serif;
+        line-height: 1.35em;
+        letter-spacing: 0.045em;
       }
 
       .examples {
@@ -56,19 +58,18 @@
         cursor: pointer;
         font-weight: 600;
         font-size: 1em;
-        background: rgb(14 122 49);
-        color: blanchedalmond;
         height: auto;
-        width: 8em;
+        width: 7.5em;
       }
 
-      button[data-playing="true"] {
+      #buton_play_one[data-playing="true"] {
         background: #ff6363;
         color: black;
       }
 
-      button[data-playing="false"] {
-        background-color: rgba(15, 210, 15, 0.55);
+      #buton_play_one[data-playing="false"] {
+        background: rgb(14 122 49);
+        color: blanchedalmond;
       }
 
       .input-wrapper,
@@ -93,9 +94,9 @@
           data-playing="false"
           role="switch"
           aria-checked="false"
-          id="button_example_one"
+          id="buton_play_one"
         >
-          <span id="button-text_example_one"></span>
+          <span id="button-text_one"></span>
         </button>
         <span class="input-wrapper">
           <label>Volume</label>
@@ -123,6 +124,34 @@
           />
         </span>
       </div>
+
+      <div class="controls">
+        <h2>Example #2:</h2>
+        <p>Make sure to enable microphone access on your browser.</p>
+        <span style="display: flex; justify-content: space-between">
+          <button
+            id="record"
+            data-start-recording="false"
+            role="switch"
+            aria-checked="false"
+          >
+            <span>Record</span>
+          </button>
+          <button
+            id="stop"
+            data-stop-recording="false"
+            role="switch"
+            aria-checked="false"
+          >
+            <span>Stop</span>
+          </button>
+        </span>
+
+        <h3>Sound clips:</h3>
+        <span class="input-wrapper sound-clips">
+          You don't have any recordings. Record something now!
+        </span>
+      </div>
     </div>
   </body>
 </html>
@@ -137,10 +166,98 @@
   let gainNode;
   let panner;
 
+  //EXAMPLE #2
+  const record = document.querySelector("#record");
+  const stop = document.querySelector("#stop");
+  const soundClips = document.querySelector(".sound-clips");
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    console.log("getUserMedia supported.");
+    navigator.mediaDevices
+      .getUserMedia(
+        // constraints - only audio needed for this app
+        {
+          audio: true,
+        }
+      )
+
+      // Success callback
+      .then(function (stream) {
+        const mediaRecorder = new MediaRecorder(stream);
+
+        record.onclick = function () {
+          mediaRecorder.start();
+          console.log(mediaRecorder.state);
+          console.log("recorder started");
+          record.style.background = "red";
+          record.style.color = "black";
+        };
+        let chunks = [];
+        mediaRecorder.ondataavailable = function (e) {
+          chunks.push(e.data);
+        };
+
+        stop.onclick = function () {
+          mediaRecorder.stop();
+          console.log(mediaRecorder.state);
+          console.log("recorder stopped");
+          record.style.background = "";
+          record.style.color = "";
+        };
+
+        mediaRecorder.onstop = function (e) {
+          console.log("recorder stopped");
+
+          const clipName = prompt("Enter a name for your sound clip");
+
+          const clipContainer = document.createElement("article");
+          const clipLabel = document.createElement("h4");
+          const audio = document.createElement("audio");
+          const deleteButton = document.createElement("button");
+
+          clipContainer.classList.add("clip");
+          audio.setAttribute("controls", "");
+          deleteButton.innerHTML = "Delete";
+          clipLabel.innerHTML = clipName;
+
+          clipContainer.appendChild(clipLabel);
+          clipContainer.appendChild(audio);
+          clipContainer.appendChild(deleteButton);
+          soundClips.innerHTML = "";
+          soundClips.appendChild(clipContainer);
+
+          const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+          chunks = [];
+          const audioURL = window.URL.createObjectURL(blob);
+          audio.src = audioURL;
+
+          deleteButton.onclick = function (e) {
+            let evtTgt = e.target;
+            evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+
+            if (chunks.length === 0) {
+              soundClips.innerHTML =
+                "You don't have any recordings. Record something now!";
+            }
+          };
+        };
+      })
+
+      // Error callback
+      .catch(function (err) {
+        console.log("The following getUserMedia error occurred: " + err);
+      });
+  } else {
+    console.log("getUserMedia not supported on your browser!");
+  }
+
+
+  //EXAMPLE #1
+
   // PLAY BUTTON
-  const playButton = document.querySelector("#button_example_one");
-  const buttonText = document.querySelector("#button-text_example_one");
-  buttonText.innerHTML = "play";
+  const playButton = document.querySelector("#buton_play_one");
+  const buttonText = document.querySelector("#button-text_one");
+  buttonText.innerHTML = "Play";
 
   playButton.addEventListener(
     "click",
@@ -158,12 +275,12 @@
       if (this.dataset.playing === "false") {
         if (audioPromise !== undefined) {
           await audioPromise;
-          buttonText.innerHTML = "pause";
+          buttonText.innerHTML = "Pause";
           this.dataset.playing = "true";
         }
       } else if (this.dataset.playing === "true") {
         audioElement.pause();
-        buttonText.innerHTML = "play";
+        buttonText.innerHTML = "Play";
         this.dataset.playing = "false";
       }
 
@@ -180,7 +297,7 @@
     "ended",
     () => {
       playButton.dataset.playing = "false";
-      buttonText.innerHTML = "play";
+      buttonText.innerHTML = "Play";
     },
     false
   );
@@ -192,7 +309,6 @@
     "input",
     function () {
       gainNode.gain.value = this.value;
-      volumeCount.innerHTML = this.value;
     },
     false
   );
