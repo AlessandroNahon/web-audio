@@ -1,0 +1,14 @@
+ [
+  {
+    "origin": ["http://localhost:8000"],
+    "method": [
+      "GET",
+      "PUT",
+      "OPTIONS"
+    ],
+    "responseHeader": [
+      "Content-Type", "Access-Control-Request-Method", " Access-Control-Request-Header"
+    ],
+    "maxAgeSeconds": 2592000
+  }
+]
